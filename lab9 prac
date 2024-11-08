@@ -1,0 +1,169 @@
+
+// Интерфейс IReport для отчета
+public interface IReport
+{
+    string Generate();
+}
+
+// Классы отчетов SalesReport и UserReport
+public class SalesReport : IReport
+{
+    public string Generate() => "Sales Report Data";
+}
+
+public class UserReport : IReport
+{
+    public string Generate() => "User Report Data";
+}
+
+// Абстрактный декоратор ReportDecorator
+public abstract class ReportDecorator : IReport
+{
+    protected IReport _report;
+
+    public ReportDecorator(IReport report) => _report = report;
+
+    public abstract string Generate();
+}
+
+// Декоратор DateFilterDecorator
+public class DateFilterDecorator : ReportDecorator
+{
+    private DateTime _startDate;
+    private DateTime _endDate;
+
+    public DateFilterDecorator(IReport report, DateTime startDate, DateTime endDate) : base(report)
+    {
+        _startDate = startDate;
+        _endDate = endDate;
+    }
+
+    public override string Generate() => $"{_report.Generate()} filtered by dates {_startDate} to {_endDate}";
+}
+
+// Декоратор SortingDecorator
+public class SortingDecorator : ReportDecorator
+{
+    private string _sortCriterion;
+
+    public SortingDecorator(IReport report, string sortCriterion) : base(report) => _sortCriterion = sortCriterion;
+
+    public override string Generate() => $"{_report.Generate()} sorted by {_sortCriterion}";
+}
+
+// Декораторы CsvExportDecorator и PdfExportDecorator
+public class CsvExportDecorator : ReportDecorator
+{
+    public CsvExportDecorator(IReport report) : base(report) { }
+
+    public override string Generate() => $"{_report.Generate()} exported to CSV";
+}
+
+public class PdfExportDecorator : ReportDecorator
+{
+    public PdfExportDecorator(IReport report) : base(report) { }
+
+    public override string Generate() => $"{_report.Generate()} exported to PDF";
+}
+
+// Клиентский код для генерации отчета
+public class ReportClient
+{
+    public void GenerateReport()
+    {
+        IReport report = new SalesReport();
+        report = new DateFilterDecorator(report, new DateTime(2023, 01, 01), new DateTime(2023, 12, 31));
+        report = new SortingDecorator(report, "Amount");
+        report = new CsvExportDecorator(report);
+
+        Console.WriteLine(report.Generate());
+    }
+}
+
+// Интерфейс и класс для внутренней службы доставки
+public interface IInternalDeliveryService
+{
+    void DeliverOrder(string orderId);
+    string GetDeliveryStatus(string orderId);
+}
+
+public class InternalDeliveryService : IInternalDeliveryService
+{
+    public void DeliverOrder(string orderId) => Console.WriteLine($"Internal delivery for order {orderId}");
+
+    public string GetDeliveryStatus(string orderId) => "Delivered by Internal Service";
+}
+
+// Внешние службы логистики
+public class ExternalLogisticsServiceA
+{
+    public void ShipItem(int itemId) => Console.WriteLine($"Shipping item {itemId} via ExternalLogisticsServiceA");
+
+    public string TrackShipment(int shipmentId) => "Shipment status from ServiceA";
+}
+
+public class ExternalLogisticsServiceB
+{
+    public void SendPackage(string packageInfo) => Console.WriteLine($"Sending package {packageInfo} via ExternalLogisticsServiceB");
+
+    public string CheckPackageStatus(string trackingCode) => "Package status from ServiceB";
+}
+
+// Адаптеры для внешних служб LogisticsAdapterA и LogisticsAdapterB
+public class LogisticsAdapterA : IInternalDeliveryService
+{
+    private ExternalLogisticsServiceA _service;
+
+    public LogisticsAdapterA(ExternalLogisticsServiceA service) => _service = service;
+
+    public void DeliverOrder(string orderId)
+    {
+        int itemId = int.Parse(orderId);
+        _service.ShipItem(itemId);
+    }
+
+    public string GetDeliveryStatus(string orderId)
+    {
+        int shipmentId = int.Parse(orderId);
+        return _service.TrackShipment(shipmentId);
+    }
+}
+
+public class LogisticsAdapterB : IInternalDeliveryService
+{
+    private ExternalLogisticsServiceB _service;
+
+    public LogisticsAdapterB(ExternalLogisticsServiceB service) => _service = service;
+
+    public void DeliverOrder(string orderId) => _service.SendPackage(orderId);
+
+    public string GetDeliveryStatus(string orderId) => _service.CheckPackageStatus(orderId);
+}
+
+// Фабрика для выбора службы доставки
+public class DeliveryServiceFactory
+{
+    public IInternalDeliveryService CreateService(string serviceType)
+    {
+        return serviceType switch
+        {
+            "Internal" => new InternalDeliveryService(),
+            "ExternalA" => new LogisticsAdapterA(new ExternalLogisticsServiceA()),
+            "ExternalB" => new LogisticsAdapterB(new ExternalLogisticsServiceB()),
+            _ => throw new NotImplementedException()
+        };
+    }
+}
+
+// Клиентский код 
+public class LogisticsClient
+{
+    public void ProcessDelivery(string serviceType, string orderId)
+    {
+        var factory = new DeliveryServiceFactory();
+        IInternalDeliveryService deliveryService = factory.CreateService(serviceType);
+        deliveryService.DeliverOrder(orderId);
+        Console.WriteLine(deliveryService.GetDeliveryStatus(orderId));
+    }
+}
+```
