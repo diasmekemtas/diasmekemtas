@@ -1,0 +1,279 @@
+// task1 
+public class Book {
+    public string Title { get; set; }
+    public string ISBN { get; set; }
+    public List<Author> Authors { get; set; }
+    public int PublicationYear { get; set; }
+    public string Genre { get; set; }
+    public bool AvailabilityStatus { get; private set; }
+
+    public Book(string title, string isbn, List<Author> authors, int publicationYear, string genre) {
+        Title = title;
+        ISBN = isbn;
+        Authors = authors;
+        PublicationYear = publicationYear;
+        Genre = genre;
+        AvailabilityStatus = true;
+    }
+
+    public void ChangeAvailabilityStatus(bool status) {
+        AvailabilityStatus = status;
+    }
+
+    public string GetBookInfo() {
+        return $"{Title} by {string.Join(", ", Authors.Select(a => a.Name))}, {PublicationYear}";
+    }
+}
+public abstract class User {
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Email { get; set; }
+
+    public abstract void Register();
+}
+
+public class Reader : User {
+    public List<Book> BorrowedBooks { get; private set; } = new List<Book>();
+
+    public override void Register() {
+        Console.WriteLine($"{Name} registered as a Reader.");
+    }
+
+    public void BorrowBook(Book book) {
+        if (!book.AvailabilityStatus) throw new Exception("Book is not available.");
+        BorrowedBooks.Add(book);
+        book.ChangeAvailabilityStatus(false);
+    }
+
+    public void ReturnBook(Book book) {
+        BorrowedBooks.Remove(book);
+        book.ChangeAvailabilityStatus(true);
+    }
+}
+
+public class Librarian : User {
+    public override void Register() {
+        Console.WriteLine($"{Name} registered as a Librarian.");
+    }
+
+    public void AddBook(Book book, Library library) {
+        library.Books.Add(book);
+    }
+
+    public void RemoveBook(Book book, Library library) {
+        library.Books.Remove(book);
+    }
+}
+public class Loan {
+    public Book Book { get; set; }
+    public Reader Reader { get; set; }
+    public DateTime LoanDate { get; set; }
+    public DateTime? ReturnDate { get; set; }
+
+    public Loan(Book book, Reader reader) {
+        Book = book;
+        Reader = reader;
+        LoanDate = DateTime.Now;
+    }
+
+    public void ReturnBook() {
+        Book.ChangeAvailabilityStatus(true);
+        ReturnDate = DateTime.Now;
+    }
+}
+public class Library {
+    public List<Book> Books { get; private set; } = new List<Book>();
+    public List<User> Users { get; private set; } = new List<User>();
+    public List<Loan> Loans { get; private set; } = new List<Loan>();
+
+    public void AddBook(Book book) {
+        Books.Add(book);
+    }
+
+    public void RemoveBook(string isbn) {
+        Books.RemoveAll(b => b.ISBN == isbn);
+    }
+
+    public Book SearchBooks(string title) {
+        return Books.FirstOrDefault(b => b.Title.Equals(title, StringComparison.OrdinalIgnoreCase));
+    }
+}
+public class BookNotAvailableException : Exception {
+    public BookNotAvailableException(string message) : base(message) { }
+}
+
+
+
+//task 2
+public class Book
+{
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public string Genre { get; set; }
+    public string ISBN { get; set; }
+    public bool IsAvailable { get; set; } = true;
+
+    public Book(string title, string author, string genre, string isbn)
+    {
+        Title = title;
+        Author = author;
+        Genre = genre;
+        ISBN = isbn;
+    }
+
+    public void DisplayInfo()
+    {
+        Console.WriteLine($"Title: {Title}, Author: {Author}, Genre: {Genre}, ISBN: {ISBN}, Available: {IsAvailable}");
+    }
+}
+public class Reader
+{
+    public string FirstName { get; set; }
+    public string LastName { get; set; }
+    public string TicketNumber { get; set; }
+
+    public Reader(string firstName, string lastName, string ticketNumber)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+        TicketNumber = ticketNumber;
+    }
+
+    public void BorrowBook(Librarian librarian, Book book)
+    {
+        librarian.IssueBook(this, book);
+    }
+
+    public void ReturnBook(Librarian librarian, Book book)
+    {
+        librarian.AcceptBookReturn(this, book);
+    }
+}
+public class Librarian
+{
+    private Catalog _catalog;
+    private AccountingSystem _accountingSystem;
+
+    public Librarian(Catalog catalog, AccountingSystem accountingSystem)
+    {
+        _catalog = catalog;
+        _accountingSystem = accountingSystem;
+    }
+
+    public void IssueBook(Reader reader, Book book)
+    {
+        if (book.IsAvailable)
+        {
+            book.IsAvailable = false;
+            _accountingSystem.RecordLoan(reader, book);
+            Console.WriteLine($"Book '{book.Title}' issued to {reader.FirstName} {reader.LastName}.");
+        }
+        else
+        {
+            Console.WriteLine($"Book '{book.Title}' is not available.");
+        }
+    }
+
+    public void AcceptBookReturn(Reader reader, Book book)
+    {
+        book.IsAvailable = true;
+        _accountingSystem.RecordReturn(reader, book);
+        Console.WriteLine($"Book '{book.Title}' returned by {reader.FirstName} {reader.LastName}.");
+    }
+}
+using System.Collections.Generic;
+using System.Linq;
+
+public class Catalog
+{
+    private List<Book> _books = new List<Book>();
+
+    public void AddBook(Book book)
+    {
+        _books.Add(book);
+    }
+
+    public void RemoveBook(string isbn)
+    {
+        _books.RemoveAll(b => b.ISBN == isbn);
+    }
+
+    public List<Book> SearchByTitle(string title)
+    {
+        return _books.Where(b => b.Title.Contains(title, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    public List<Book> SearchByAuthor(string author)
+    {
+        return _books.Where(b => b.Author.Contains(author, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    public void DisplayAllBooks()
+    {
+        foreach (var book in _books)
+        {
+            book.DisplayInfo();
+        }
+    }
+}
+using System;
+using System.Collections.Generic;
+
+public class AccountingSystem
+{
+    private List<string> _logs = new List<string>();
+
+    public void RecordLoan(Reader reader, Book book)
+    {
+        _logs.Add($"[Loan] {DateTime.Now}: {reader.FirstName} {reader.LastName} borrowed '{book.Title}'.");
+    }
+
+    public void RecordReturn(Reader reader, Book book)
+    {
+        _logs.Add($"[Return] {DateTime.Now}: {reader.FirstName} {reader.LastName} returned '{book.Title}'.");
+    }
+
+    public void DisplayLogs()
+    {
+        Console.WriteLine("Transaction Logs:");
+        foreach (var log in _logs)
+        {
+            Console.WriteLine(log);
+        }
+    }
+}
+using System;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        // Инициализация
+        Catalog catalog = new Catalog();
+        AccountingSystem accountingSystem = new AccountingSystem();
+        Librarian librarian = new Librarian(catalog, accountingSystem);
+
+        // Добавление книг
+        catalog.AddBook(new Book("1984", "George Orwell", "Dystopian", "123-456"));
+        catalog.AddBook(new Book("The Catcher in the Rye", "J.D. Salinger", "Fiction", "789-101"));
+
+        // Отображение всех книг
+        Console.WriteLine("Library Catalog:");
+        catalog.DisplayAllBooks();
+
+        // Читатель
+        Reader reader = new Reader("John", "Doe", "T123");
+
+        // Выдача книги
+        Console.WriteLine("\nIssuing Book:");
+        reader.BorrowBook(librarian, catalog.SearchByTitle("1984")[0]);
+
+        // Возврат книги
+        Console.WriteLine("\nReturning Book:");
+        reader.ReturnBook(librarian, catalog.SearchByTitle("1984")[0]);
+
+        // Логи учета
+        Console.WriteLine("\nTransaction Logs:");
+        accountingSystem.DisplayLogs();
+    }
+}
