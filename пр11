@@ -1,0 +1,281 @@
+//task 1
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Book
+{
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public string ISBN { get; set; }
+    public bool IsAvailable { get; set; } = true;
+
+    public Book(string title, string author, string isbn)
+    {
+        Title = title;
+        Author = author;
+        ISBN = isbn;
+    }
+
+    public override string ToString()
+    {
+        return $"{Title} by {Author} (ISBN: {ISBN}) - {(IsAvailable ? "Available" : "Rented")}";
+    }
+}
+
+class Reader
+{
+    public string Name { get; set; }
+    public List<Book> RentedBooks { get; } = new List<Book>();
+    private const int MaxBooks = 3;
+
+    public Reader(string name)
+    {
+        Name = name;
+    }
+
+    public bool RentBook(Book book)
+    {
+        if (RentedBooks.Count >= MaxBooks)
+        {
+            Console.WriteLine($"{Name} cannot rent more than {MaxBooks} books.");
+            return false;
+        }
+        if (book.IsAvailable)
+        {
+            RentedBooks.Add(book);
+            book.IsAvailable = false;
+            Console.WriteLine($"{Name} rented {book.Title}.");
+            return true;
+        }
+        else
+        {
+            Console.WriteLine($"{book.Title} is not available.");
+            return false;
+        }
+    }
+
+    public void ReturnBook(Book book)
+    {
+        if (RentedBooks.Remove(book))
+        {
+            book.IsAvailable = true;
+            Console.WriteLine($"{Name} returned {book.Title}.");
+        }
+        else
+        {
+            Console.WriteLine($"{Name} does not have {book.Title}.");
+        }
+    }
+}
+
+class Librarian
+{
+    public string Name { get; set; }
+
+    public Librarian(string name)
+    {
+        Name = name;
+    }
+
+    public void DisplayAllBooks(Library library)
+    {
+        Console.WriteLine("Books in the library:");
+        foreach (var book in library.Books)
+        {
+            Console.WriteLine(book);
+        }
+    }
+
+    public List<Book> SearchBooks(Library library, string query)
+    {
+        return library.Books.Where(b => b.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                                        b.Author.Contains(query, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+}
+
+class Library
+{
+    public List<Book> Books { get; } = new List<Book>();
+
+    public void AddBook(Book book)
+    {
+        Books.Add(book);
+        Console.WriteLine($"{book.Title} has been added to the library.");
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        Library library = new Library();
+        library.AddBook(new Book("1984", "George Orwell", "12345"));
+        library.AddBook(new Book("Brave New World", "Aldous Huxley", "67890"));
+        library.AddBook(new Book("The Great Gatsby", "F. Scott Fitzgerald", "54321"));
+
+        Librarian librarian = new Librarian("Anna");
+
+        librarian.DisplayAllBooks(library);
+        var foundBooks = librarian.SearchBooks(library, "1984");
+        Console.WriteLine("\nSearch results:");
+        foundBooks.ForEach(Console.WriteLine);
+
+        Reader reader = new Reader("John");
+        reader.RentBook(library.Books[0]);
+        librarian.DisplayAllBooks(library);
+
+        reader.ReturnBook(library.Books[0]);
+        librarian.DisplayAllBooks(library);
+    }
+}
+
+
+// task 2
+public interface IHotelService
+{
+    IEnumerable<string> SearchHotels(string location, string roomClass, decimal maxPrice);
+}
+
+public interface IBookingService
+{
+    bool BookRoom(string hotelName, string roomClass, DateTime startDate, DateTime endDate, string userId);
+    IEnumerable<string> GetBookings(string userId);
+}
+
+public interface IPaymentService
+{
+    bool ProcessPayment(string bookingId, decimal amount, string paymentMethod);
+}
+
+public interface INotificationService
+{
+    void SendNotification(string userId, string message);
+}
+
+public interface IUserManagementService
+{
+    string RegisterUser(string name, string email, string password);
+    string LoginUser(string email, string password);
+}
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+public class HotelService : IHotelService
+{
+    private List<Hotel> hotels = new List<Hotel>
+    {
+        new Hotel("Grand Hotel", "New York", "Deluxe", 150),
+        new Hotel("Budget Stay", "New York", "Economy", 50),
+        new Hotel("Beach Resort", "Miami", "Deluxe", 200)
+    };
+
+    public IEnumerable<string> SearchHotels(string location, string roomClass, decimal maxPrice)
+    {
+        return hotels.Where(h => h.Location == location 
+                                 && h.RoomClass == roomClass 
+                                 && h.Price <= maxPrice)
+                     .Select(h => $"{h.Name} - ${h.Price} per night");
+    }
+}
+
+public class BookingService : IBookingService
+{
+    private List<Booking> bookings = new List<Booking>();
+
+    public bool BookRoom(string hotelName, string roomClass, DateTime startDate, DateTime endDate, string userId)
+    {
+        // Check for availability (dummy implementation)
+        bookings.Add(new Booking(hotelName, roomClass, startDate, endDate, userId));
+        return true;
+    }
+
+    public IEnumerable<string> GetBookings(string userId)
+    {
+        return bookings.Where(b => b.UserId == userId)
+                       .Select(b => $"{b.HotelName} from {b.StartDate.ToShortDateString()} to {b.EndDate.ToShortDateString()}");
+    }
+}
+
+public class PaymentService : IPaymentService
+{
+    public bool ProcessPayment(string bookingId, decimal amount, string paymentMethod)
+    {
+        Console.WriteLine($"Payment of ${amount} processed for booking {bookingId} via {paymentMethod}.");
+        return true;
+    }
+}
+
+public class NotificationService : INotificationService
+{
+    public void SendNotification(string userId, string message)
+    {
+        Console.WriteLine($"Notification to User {userId}: {message}");
+    }
+}
+
+public class UserManagementService : IUserManagementService
+{
+    private Dictionary<string, string> users = new Dictionary<string, string>(); // email -> password
+    private Dictionary<string, string> userIds = new Dictionary<string, string>(); // email -> userId
+
+    public string RegisterUser(string name, string email, string password)
+    {
+        string userId = Guid.NewGuid().ToString();
+        users[email] = password;
+        userIds[email] = userId;
+        return userId;
+    }
+
+    public string LoginUser(string email, string password)
+    {
+        return users.TryGetValue(email, out var storedPassword) && storedPassword == password 
+            ? userIds[email] 
+            : null;
+    }
+}
+//UI-компонент
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        // Dependency injection
+        IHotelService hotelService = new HotelService();
+        IBookingService bookingService = new BookingService();
+        IPaymentService paymentService = new PaymentService();
+        INotificationService notificationService = new NotificationService();
+        IUserManagementService userManagementService = new UserManagementService();
+
+        // User registration and login
+        string userId = userManagementService.RegisterUser("John Doe", "john@example.com", "password123");
+        Console.WriteLine("User registered.");
+
+        string loggedInUser = userManagementService.LoginUser("john@example.com", "password123");
+        Console.WriteLine("User logged in.");
+
+        // Search for hotels
+        Console.WriteLine("Searching for hotels...");
+        var hotels = hotelService.SearchHotels("New York", "Deluxe", 200);
+        foreach (var hotel in hotels)
+        {
+            Console.WriteLine(hotel);
+        }
+
+        // Book a room
+        Console.WriteLine("Booking a room...");
+        bookingService.BookRoom("Grand Hotel", "Deluxe", DateTime.Now, DateTime.Now.AddDays(2), loggedInUser);
+        notificationService.SendNotification(loggedInUser, "Booking confirmed!");
+
+        // Display bookings
+        Console.WriteLine("Your bookings:");
+        var bookings = bookingService.GetBookings(loggedInUser);
+        foreach (var booking in bookings)
+        {
+            Console.WriteLine(booking);
+        }
+    }
+}
