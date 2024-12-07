@@ -1,0 +1,84 @@
+using System;
+
+public interface IState
+{
+    void HandleRequest(TicketMachine context);
+}
+
+public class IdleState : IState
+{
+    public void HandleRequest(TicketMachine context)
+    {
+        Console.WriteLine("Выберите билет.");
+        context.SetState(new WaitingForMoneyState());
+    }
+}
+
+public class WaitingForMoneyState : IState
+{
+    public void HandleRequest(TicketMachine context)
+    {
+        Console.WriteLine("Внесите деньги.");
+        context.SetState(new MoneyReceivedState());
+    }
+}
+
+public class MoneyReceivedState : IState
+{
+    public void HandleRequest(TicketMachine context)
+    {
+        Console.WriteLine("Билет выдан.");
+        context.SetState(new TicketDispensedState());
+    }
+}
+
+public class TicketDispensedState : IState
+{
+    public void HandleRequest(TicketMachine context)
+    {
+        Console.WriteLine("Процесс завершен.");
+    }
+}
+
+public class TransactionCanceledState : IState
+{
+    public void HandleRequest(TicketMachine context)
+    {
+        Console.WriteLine("Транзакция отменена.");
+        context.SetState(new IdleState());
+    }
+}
+
+public class TicketMachine
+{
+    private IState _state;
+
+    public TicketMachine()
+    {
+        _state = new IdleState(); // начальное состояние
+    }
+
+    public void SetState(IState state)
+    {
+        _state = state;
+    }
+
+    public void Request()
+    {
+        _state.HandleRequest(this);
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var ticketMachine = new TicketMachine();
+
+        ticketMachine.Request();  // Idle -> WaitingForMoney
+        ticketMachine.Request();  // WaitingForMoney -> MoneyReceived
+        ticketMachine.Request();  // MoneyReceived -> TicketDispensed
+        ticketMachine.SetState(new TransactionCanceledState());
+        ticketMachine.Request();  // TransactionCanceled -> Idle
+    }
+}
