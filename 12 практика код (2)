@@ -1,0 +1,330 @@
+### Задание 1: **Диаграмма состояний для системы управления процессом заказа автомобиля**
+
+#### Система: Управление процессом заказа автомобиля (например, такси)
+
+Для этой системы можно построить диаграмму состояний, отражающую процесс заказа автомобиля с возможностью отмены на каждом этапе.
+
+#### Состояния:
+
+1. **Idle** (Ожидание) — начальное состояние, когда система ожидает действия пользователя.
+2. **CarSelected** (Выбор автомобиля) — пользователь выбрал автомобиль, но еще не подтвердил заказ.
+3. **OrderConfirmed** (Заказ подтвержден) — заказ подтвержден, автомобиль в пути.
+4. **CarArrived** (Автомобиль прибыл) — автомобиль прибыл к пользователю.
+5. **InTrip** (В поездке) — поездка начата, пользователь в автомобиле.
+6. **TripCompleted** (Поездка завершена) — поездка завершена, система ожидает оплату.
+7. **TripCancelled** (Транзакция отменена) — заказ отменен.
+
+#### Переходы:
+
+- **Idle → CarSelected**: пользователь выбирает автомобиль.
+- **CarSelected → OrderConfirmed**: пользователь подтверждает заказ.
+- **OrderConfirmed → CarArrived**: автомобиль отправляется по адресу.
+- **CarArrived → InTrip**: пользователь садится в автомобиль, поездка начинается.
+- **InTrip → TripCompleted**: поездка завершена.
+- **TripCompleted → Idle**: система ожидает новых заказов.
+- **CarSelected → TripCancelled**: пользователь отменяет заказ до подтверждения.
+- **OrderConfirmed → TripCancelled**: пользователь отменяет заказ после подтверждения, но до прибытия автомобиля.
+- **CarArrived → TripCancelled**: заказ отменен после прибытия автомобиля.
+
+#### Диаграмма состояний:
+
+```
++-------------------+
+|      Idle         |
++-------------------+
+        |
+   (Выбор автомобиля)
+        V
++-------------------+
+|   CarSelected     |
++-------------------+
+        |
+(Подтверждение заказа)
+        V
++-------------------+
+|  OrderConfirmed   |
++-------------------+
+        |
+(Автомобиль в пути)
+        V
++-------------------+
+|   CarArrived      |
++-------------------+
+        |
+(Поездка началась)
+        V
++-------------------+
+|    InTrip         |
++-------------------+
+        |
+(Поездка завершена)
+        V
++-------------------+
+| TripCompleted     |
++-------------------+
+        |
+(Ожидание новых заказов)
+        V
++-------------------+
+|      Idle         |
++-------------------+
+        |
+(Отмена заказа на любом этапе)
+        V
++-------------------+
+| TripCancelled     |
++-------------------+
+```
+
+#### Реализация на C# (паттерн "Состояние"):
+
+```csharp
+using System;
+
+public interface IState
+{
+    void HandleRequest(OrderContext context);
+}
+
+public class IdleState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Ожидание действий пользователя.");
+        context.SetState(new CarSelectedState());
+    }
+}
+
+public class CarSelectedState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Автомобиль выбран, подтверждение заказа.");
+        context.SetState(new OrderConfirmedState());
+    }
+}
+
+public class OrderConfirmedState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Заказ подтвержден, автомобиль в пути.");
+        context.SetState(new CarArrivedState());
+    }
+}
+
+public class CarArrivedState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Автомобиль прибыл, поездка началась.");
+        context.SetState(new InTripState());
+    }
+}
+
+public class InTripState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Поездка завершена.");
+        context.SetState(new TripCompletedState());
+    }
+}
+
+public class TripCompletedState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Ожидается новый заказ.");
+        context.SetState(new IdleState());
+    }
+}
+
+public class TripCancelledState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Заказ отменен.");
+        context.SetState(new IdleState());
+    }
+}
+
+public class OrderContext
+{
+    private IState _state;
+
+    public OrderContext()
+    {
+        _state = new IdleState();
+    }
+
+    public void SetState(IState state)
+    {
+        _state = state;
+    }
+
+    public void Request()
+    {
+        _state.HandleRequest(this);
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var orderContext = new OrderContext();
+
+        orderContext.Request();  // Idle -> CarSelected
+        orderContext.Request();  // CarSelected -> OrderConfirmed
+        orderContext.Request();  // OrderConfirmed -> CarArrived
+        orderContext.Request();  // CarArrived -> InTrip
+        orderContext.Request();  // InTrip -> TripCompleted
+        orderContext.SetState(new TripCancelledState());
+        orderContext.Request();  // TripCancelled -> Idle
+    }
+}
+```
+
+### Задание 2: **Диаграмма вариантов использования для системы управления бронированием мероприятий**
+
+#### Система: Управление бронированием мероприятий
+
+Для этой системы диаграмма вариантов использования будет включать три роли: Гость, Зарегистрированный пользователь и Администратор.
+
+#### Акторы:
+1. **Гость**
+2. **Зарегистрированный пользователь**
+3. **Администратор**
+
+#### Варианты использования:
+1. **Гость**:
+   - Просмотр доступных мероприятий.
+
+2. **Зарегистрированный пользователь**:
+   - Бронирование мероприятия.
+   - Отмена бронирования.
+
+3. **Администратор**:
+   - Управление мероприятиями (добавление, редактирование, удаление).
+   - Просмотр всех бронирований.
+
+#### Связи:
+- **Гость** может только просматривать мероприятия.
+- **Зарегистрированный пользователь** может бронировать и отменять бронирования.
+- **Администратор** управляет мероприятиями и просматривает все бронирования.
+
+#### Диаграмма:
+
+```
++-----------------------+           +-----------------------------+           +----------------------------+
+|        Гость          | --------> | Просмотр мероприятий        | <-------- |        Администратор       |
++-----------------------+           +-----------------------------+           +----------------------------+
+                                                            |
+                                                            |
+             +----------------------------+                |
+             |  Зарегистрированный        |                |
+             |  пользователь              | -------------->|
+             +----------------------------+                |
+                |    |                                +-----------------------+
+                |    +--> Бронирование мероприятия   | Управление мероприятиями|
+                |         |                            +-----------------------+
+                |         +--> Отмена бронирования
+                |
+           +-----------------------------+
+           |  Просмотр всех бронирований |
+           +-----------------------------+
+```
+
+#### Реализация на C#:
+
+```csharp
+using System;
+using System.Collections.Generic;
+
+public class Event
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public DateTime Date { get; set; }
+    public string Location { get; set; }
+}
+
+public class User
+{
+    public int Id { get; set; }
+    public string Name { get; set; }
+    public string Role { get; set; }
+}
+
+public class Booking
+{
+    public int Id { get; set; }
+    public User User { get; set; }
+    public Event Event { get; set; }
+    public string Status { get; set; } // Status: "Booked", "Cancelled"
+}
+
+public class EventManager
+{
+    public List<Event> Events { get; set; } = new List<Event>();
+    public List<Booking> Bookings { get; set; } = new List<Booking>();
+
+    public void ViewEvents()
+    {
+        foreach (var ev in Events)
+        {
+            Console.WriteLine($"Event: {ev.Name}, Date: {ev.Date}, Location: {ev.Location}");
+        }
+    }
+
+    public void BookEvent(User user, Event ev)
+    {
+        if (user.Role == "Registered")
+        {
+            var booking = new Booking
+            {
+                Id = Bookings.Count + 1,
+                User = user,
+                Event = ev,
+                Status = "Booked"
+            };
+            Bookings.Add(booking);
+            Console.WriteLine($"{user.Name} booked {ev.Name} on {ev.Date}");
+        }
+        else
+        {
+            Console.WriteLine("Only registered users can book events.");
+        }
+    }
+
+    public void CancelBooking(User user, Event ev)
+    {
+        var booking = Bookings.Find(b => b.User.Id == user.Id && b.Event.Id == ev.Id);
+        if (booking != null)
+        {
+            booking.Status = "Cancelled";
+            Console.WriteLine($"{user.Name} cancelled booking for {ev.Name}");
+        }
+    }
+
+    public void ManageEvents(User user, Event ev, string action)
+    {
+        if (user.Role == "Admin")
+        {
+            if (action == "Add")
+                Events.Add(ev);
+            else if (action == "Edit")
+                // Edit event logic
+            else if (action == "Delete")
+                Events.Remove(ev);
+            Console.WriteLine($"{user.Name} {action} event: {ev.Name}");
+        }
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var
