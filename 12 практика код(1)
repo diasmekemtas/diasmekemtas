@@ -1,0 +1,105 @@
+using System;
+
+public interface IState
+{
+    void HandleRequest(OrderContext context);
+}
+
+public class IdleState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Ожидание действий пользователя.");
+        context.SetState(new CarSelectedState());
+    }
+}
+
+public class CarSelectedState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Автомобиль выбран, подтверждение заказа.");
+        context.SetState(new OrderConfirmedState());
+    }
+}
+
+public class OrderConfirmedState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Заказ подтвержден, автомобиль в пути.");
+        context.SetState(new CarArrivedState());
+    }
+}
+
+public class CarArrivedState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Автомобиль прибыл, поездка началась.");
+        context.SetState(new InTripState());
+    }
+}
+
+public class InTripState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Поездка завершена.");
+        context.SetState(new TripCompletedState());
+    }
+}
+
+public class TripCompletedState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Ожидается новый заказ.");
+        context.SetState(new IdleState());
+    }
+}
+
+public class TripCancelledState : IState
+{
+    public void HandleRequest(OrderContext context)
+    {
+        Console.WriteLine("Заказ отменен.");
+        context.SetState(new IdleState());
+    }
+}
+
+public class OrderContext
+{
+    private IState _state;
+
+    public OrderContext()
+    {
+        _state = new IdleState();
+    }
+
+    public void SetState(IState state)
+    {
+        _state = state;
+    }
+
+    public void Request()
+    {
+        _state.HandleRequest(this);
+    }
+}
+
+class Program
+{
+    static void Main()
+    {
+        var orderContext = new OrderContext();
+
+        orderContext.Request();  // Idle -> CarSelected
+        orderContext.Request();  // CarSelected -> OrderConfirmed
+        orderContext.Request();  // OrderConfirmed -> CarArrived
+        orderContext.Request();  // CarArrived -> InTrip
+        orderContext.Request();  // InTrip -> TripCompleted
+        orderContext.SetState(new TripCancelledState());
+        orderContext.Request();  // TripCancelled -> Idle
+    }
+}
