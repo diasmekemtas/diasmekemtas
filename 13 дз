@@ -1,0 +1,30 @@
+from datetime import datetime
+
+# Список доступных площадок
+venues = {
+    "Venue A": ["2024-12-15", "2024-12-16"],
+    "Venue B": ["2024-12-17", "2024-12-18"]
+}
+
+def check_availability(venue_name, date):
+    if venue_name in venues and date in venues[venue_name]:
+        return True
+    return False
+
+# Проверка доступности
+venue_name = "Venue A"
+date = "2024-12-15"
+if check_availability(venue_name, date):
+    print(f"{venue_name} доступна на {date}.")
+else:
+    print(f"{venue_name} недоступна на {date}.")
+
+    def process_application(application):
+    if application.get('experience') >= 3 and application.get('skills'):
+        return "Приглашение на собеседование"
+    return "Отклонение заявки"
+
+# Пример анкеты
+candidate = {"name": "Иван Иванов", "experience": 4, "skills": ["Python", "SQL"]}
+result = process_application(candidate)
+print(result)
