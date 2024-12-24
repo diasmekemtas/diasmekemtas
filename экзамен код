@@ -1,0 +1,59 @@
+class Mediator:
+    def notify(self, sender, event, data=None):
+        pass
+
+class VideoConferenceMediator(Mediator):
+    def __init__(self):
+        self.participants = []
+        self.modules = {}
+
+    def register_participant(self, participant):
+        self.participants.append(participant)
+        participant.mediator = self
+
+    def register_module(self, name, module):
+        self.modules[name] = module
+        module.mediator = self
+
+    def notify(self, sender, event, data=None):
+        if event == "message":
+            for participant in self.participants:
+                if participant != sender:
+                    participant.receive_message(data)
+        elif event in self.modules:
+            self.modules[event].handle_action(sender, data)
+
+class Participant:
+    def __init__(self, name):
+        self.name = name
+        self.mediator = None
+
+    def send_message(self, message):
+        print(f"{self.name} отправил сообщение: {message}")
+        self.mediator.notify(self, "message", message)
+
+    def receive_message(self, message):
+        print(f"{self.name} получил сообщение: {message}")
+
+class CameraModule:
+    def __init__(self):
+        self.mediator = None
+
+    def handle_action(self, sender, data):
+        print(f"Камера участника {sender.name} {data}")
+
+mediator = VideoConferenceMediator()
+
+user1 = Participant("User1")
+user2 = Participant("User2")
+user3 = Participant("User3")
+mediator.register_participant(user1)
+mediator.register_participant(user2)
+mediator.register_participant(user3)
+
+camera_module = CameraModule()
+mediator.register_module("camera", camera_module)
+
+user1.send_message("Привет всем!")
+mediator.notify(user2, "camera", "включена")
+mediator.notify(user3, "camera", "выключена")
